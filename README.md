@@ -83,14 +83,14 @@ All circRNAs are identified in this step; in general, those with coverage **abov
 ### 2.1 Retrieve circRNA Raw Signals from FAST5
 
 In this step, we use `fast5_subset.py` to extract FAST5 files containing circRNA reads identified in previous steps.
-
+#### Usage Example
 ```bash
 python fast5_subset.py \
-  -i <input_fast5_dir> \
-  -s <output_dir> \
-  -l <read_id_list> \
+  -i /path/to/raw_fast5/ \
+  -s /path/to/output_fast5/ \
+  -l /path/to/read_id_list.txt \
   -r \
-  -t <threads>
+  -t 1
 ```
 #### Parameters explaination in this workflow
 
@@ -100,8 +100,22 @@ python fast5_subset.py \
 - `-r` : Flag to retain the original FAST5 folder structure.   
 - `-t` : Number of threads to use (default: 1).  
 
-### 2.2 guppy
-### multi
+### 2.2 Base calling
+In this workflow, **Guppy** is used to perform basecalling on circRNA-related FAST5 files.
+#### Usage Example
+```bash
+guppy_basecaller -i input_directory -s output_directory --num_callers 4 --recursive --fast5_out  --flowcell FLO-MIN106 --kit SQK-RNA002 --device cuda:0
+```
+### 2.3 Convert Multi-FAST5 to Single-FAST5
+
+Nanopore sequencing can produce multi-FAST5 files containing multiple reads per file. For downstream tools like Tombo or feature extraction scripts, it is often necessary to work with single-FAST5 files (one read per file). This step converts multi-FAST5 files into single-FAST5 format.
+
+### Usage Example
+
+```bash
+multi_to_single_fast5 -i /path/to/multi_fast5/ -s /path/to/single_fast5/ --recursive
+```
+
 ### tombo
 ### extract feature
 ### train
