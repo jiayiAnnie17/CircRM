@@ -6,7 +6,6 @@ from tqdm import tqdm
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 import mappy as mp
-from io import StringIO
 
 # 开始处理每个 CSV 文件
 def process_directory(directory_path, seq_records, reads_file, output_file, merged_fasta_name):
