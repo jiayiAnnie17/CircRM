@@ -170,7 +170,7 @@ Tombo's `resquiggle` step aligns raw nanopore signals from FAST5 files to a refe
 ```bash
 tombo resquiggle \
   /path/to/single_fast5/ \
-  /path/to/reference_genome.fa \
+  /path/to/circRNA_ref.fasta \
   --overwrite \
   --basecall-group Basecall_1D_000 \
   --processes 5 \
@@ -178,8 +178,15 @@ tombo resquiggle \
   --include-event-stdev \
   --ignore-read-locks
 ```
+##### Build circRNA_ref fasta
 
-> **Note:** For example, in our human study, we use **hg38.fa** as the reference genome here, consistent with the circRNA coordinate analysis, ensuring that coordinates are consistent across all steps.
+```bash
+python ./CircRM/Code/Build_circRNA_ref.py \
+  -c <inupt_pos_csv> \
+  -r <reference genome> \
+  -o <output_fasta>
+```
+As the virtual library is too large, we only used positions with detected circRNAs to build the FASTA, and the pos file format follows the first five columns of the output in section 1.1.
 
 ### 2.5 Signal feature extraction
 
@@ -264,25 +271,23 @@ python ./CircRM/Code/Predict_multi-modif.py \
 
 ```bash
 Rscript ./CircRM/Code/Methylation_level.R \
-  -c <circRNA_file.txt> \
   -p <modification_pvalue.tsv> \
   -l <modification_likelihood.tsv> \
+  --pos <pos_csv>
   -o <output_filtered_methylation.csv> \
-  [--min_depth <min_read_depth>] \
   [--min_count <min_total_count>]
 ```
 
 #### Dependencies
 
-This script depends on the following R packages: `optparse`, `tidyr`, `dplyr`, `GenomicFeatures`, and `GenomicRanges`.
+This script depends on the following R packages: `optparse`, `tidyr`, `dplyr`.
 
 #### Parameters explaination
 
-- `-c` : Path to the input circRNA file in TXT format.
 - `-p` : Path to the modification p-value file in TSV format.
 - `-l` : Path to the modification likelihood file in TSV format.
 - `-o` : Path to the output CSV file for filtered methylation levels.
-- `--min_depth` : Minimum read depth to keep a circRNA (default: 30).
-- `--min_count` : Minimum total read count for a site (default: 5).  
+- '--pos' : Path to pos file in CSV format (same as 2.4).
+- `--min_count` : Minimum total read count for a site (default: 5). 
 
 
