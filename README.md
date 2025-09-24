@@ -270,7 +270,7 @@ python ./CircRM/Code/Predict_multi-modif.py \
 ### 2.8 Methylation level
 
 ```bash
-Rscript ./CircRM/Code/Methylation_level.R \
+Rscript ./CircRM/Code/Methylation_Rate.R \
   -p <modification_pvalue.tsv> \
   -l <modification_likelihood.tsv> \
   --pos <pos_csv>
