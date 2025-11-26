@@ -1,14 +1,20 @@
 import os
 import pandas as pd
 import argparse
-import sys
 from tqdm import tqdm
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 import mappy as mp
 
+# 判断 circRNA BSJ 是否符合 canonical splice signals
+def is_valid_circ_splice(seq):
+    donor = seq[-2:].upper()   # BSJ 前的两个碱基
+    acceptor = seq[:2].upper() # BSJ 后的两个碱基
+    valid_signals = [("GT", "AG"), ("GC", "AG"), ("AT", "AC")]
+    return (donor, acceptor) in valid_signals
+
 # 开始处理每个 CSV 文件
-def process_directory(directory_path, seq_records, reads_file, output_file, merged_fasta_name):
+def process_directory(directory_path, seq_records, reads_file, output_file, merged_fasta_name, splice_filter):
     csv_files = [f for f in os.listdir(directory_path) if f.endswith('.csv')]
     with tqdm(total=len(csv_files), desc="Total CSV files") as total_pbar:
         for filename in csv_files:
@@ -33,8 +39,14 @@ def process_directory(directory_path, seq_records, reads_file, output_file, merg
 
                         seq = seq_records[chrom][start:end]
                         if strand == '-':
-                            seq = seq.reverse_complement()
-                        merged_seq = seq + seq
+                            seq = seq.reverse_complement()  # 统一为正链
+
+                        # circRNA BSJ splice 信号判断
+                        if splice_filter == 'yes' and not is_valid_circ_splice(seq):
+                            print(f"[SKIP] {pos_id}: does not pass circRNA BSJ splice signal")
+                            continue
+
+                        merged_seq = seq + seq  # BSJ 拼接成双序列
                         fasta_records.append(SeqRecord(merged_seq, id=pos_id, description=""))
                         seq_strand_map[pos_id] = strand
                     except Exception as e:
@@ -55,10 +67,10 @@ def process_directory(directory_path, seq_records, reads_file, output_file, merg
                             if hit.is_primary and hit.strand == 1:
                                 try:
                                     ctg, rng = hit.ctg.split(':')
-                                    start, end = map(int, rng.split('-'))
-                                    real_start = hit.r_st + start
-                                    real_end = hit.r_en + start
-                                    if real_start < end - 10 and real_end > end + 10:
+                                    start_hit, end_hit = map(int, rng.split('-'))
+                                    real_start = hit.r_st + start_hit
+                                    real_end = hit.r_en + start_hit
+                                    if real_start < end_hit - 10 and real_end > end_hit + 10:
                                         original_strand = seq_strand_map.get(hit.ctg, '+')
                                         results.append((name, hit.ctg, original_strand))
                                 except Exception as e:
@@ -76,8 +88,6 @@ def process_directory(directory_path, seq_records, reads_file, output_file, merg
                 print(f"Error processing file {filename}: {e}")
             total_pbar.update(1)
 
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Find circRNA')
     parser.add_argument('-i', '--input', required=True, help='input fastq file')
@@ -86,6 +96,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', required=True, help='output file')
     parser.add_argument('-t', '--threads', default=1, type=int, help='number of threads')
     parser.add_argument('-m', '--merged_fasta', default='merged_sequences.fasta', help='output fasta file for merged sequences')
+    parser.add_argument('-s', '--splice_signal', default='no', choices=['yes', 'no'], help='Filter by canonical circRNA BSJ splice signals (GT–AG / GC–AG / AT–AC)')
 
     args = parser.parse_args()
 
@@ -97,6 +108,6 @@ if __name__ == "__main__":
         seq_records=seq_records,
         reads_file=args.input,
         output_file=args.output,
-        merged_fasta_name=args.merged_fasta
+        merged_fasta_name=args.merged_fasta,
+        splice_filter=args.splice_signal
     )
-
