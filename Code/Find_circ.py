@@ -6,14 +6,13 @@ from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 import mappy as mp
 
-# 判断 circRNA BSJ 是否符合 canonical splice signals
 def is_valid_circ_splice(seq):
-    donor = seq[-2:].upper()   # BSJ 前的两个碱基
-    acceptor = seq[:2].upper() # BSJ 后的两个碱基
+    donor = seq[-2:].upper()   
+    acceptor = seq[:2].upper() 
     valid_signals = [("GT", "AG"), ("GC", "AG"), ("AT", "AC")]
     return (donor, acceptor) in valid_signals
 
-# 开始处理每个 CSV 文件
+
 def process_directory(directory_path, seq_records, reads_file, output_file, merged_fasta_name, splice_filter):
     csv_files = [f for f in os.listdir(directory_path) if f.endswith('.csv')]
     with tqdm(total=len(csv_files), desc="Total CSV files") as total_pbar:
@@ -39,14 +38,14 @@ def process_directory(directory_path, seq_records, reads_file, output_file, merg
 
                         seq = seq_records[chrom][start:end]
                         if strand == '-':
-                            seq = seq.reverse_complement()  # 统一为正链
+                            seq = seq.reverse_complement()  
 
-                        # circRNA BSJ splice 信号判断
+                        
                         if splice_filter == 'yes' and not is_valid_circ_splice(seq):
                             print(f"[SKIP] {pos_id}: does not pass circRNA BSJ splice signal")
                             continue
 
-                        merged_seq = seq + seq  # BSJ 拼接成双序列
+                        merged_seq = seq + seq  
                         fasta_records.append(SeqRecord(merged_seq, id=pos_id, description=""))
                         seq_strand_map[pos_id] = strand
                     except Exception as e:
@@ -100,7 +99,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # 加载参考序列
     seq_records = {record.id: record.seq for record in SeqIO.parse(args.ref, "fasta")}
 
     process_directory(
